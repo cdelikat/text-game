@@ -86,7 +86,7 @@
     (describe-location *location* *nodes*)
     (describe-paths *location* *edges*)
     (describe-objects *location* *objects* *object-locations*)
-    (random-encounter (random 9))))
+    (random-encounter (random *total-encounters*))))
 
 (defun wait () 
 )
