@@ -58,6 +58,8 @@
       (things (you items i use for my science experiments and so forth.))
       (barcode (i havent seen that one lately))
       (lately (lately? i meant ever. i have never seen that barcode))
+      (never (never is hard to really quantify i mean who knows i may have ))
+      (ever (ever? well i hate to be so definitive who knows? am i right?))
       (default (one of those days already how about you?))
       (bye (Claude continues talking as you turn and move away.))
     )
@@ -119,6 +121,7 @@
     )
   ))
 
+(defparameter *total-encounters* 9)
 ;; delete greetings and fix random-enc function
 (defparameter *encounters* 
   '((0 (chiefofstaff))
