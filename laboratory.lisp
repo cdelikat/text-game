@@ -18,6 +18,8 @@
     (inner-main-door (You are entering the "LSD" lab facility. Inside you will find the offices of "yourself," your coworkers and labs filled with wondrous mechanical "gizmos, beakers" and vials.))
     (lobby (you are in the lobby of the "LSD" building. ))))
 
+(defparameter *all-nodes* (mapcar #'car *nodes*))
+ 
 (defparameter *edges* 
   '((parking-lot (main-path north path) (forest-path east path) (your-car west car))
     (main-path (front-door north path) (parking-lot south path))
@@ -47,8 +49,8 @@
 ;; allowed-locations: where can this character be seen?
 ;; sighting: what is said when char is seen
 (defparameter *people*
-  '((claude 
-      (allowed-locations (parking-lot main-path lobby))
+  `((claude 
+      (allowed-locations ,*all-nodes*)
       (sighting-msg (You see Claude))
       (hello (hi friend its me claude.))
       (help  (im never that much help with anything.))
@@ -60,7 +62,7 @@
       (bye (Claude continues talking as you turn and move away.))
     )
     (thedirector
-      (allowed-locations (parking-lot main-path lobby))
+      (allowed-locations ,*all-nodes*)
       (sighting-msg (You see "The Director."))
       (hello (Greetings good worker.))
       (help  (Come find me later I have to greet some visitors.))
@@ -68,7 +70,7 @@
       (bye  (The Director waves.))
     )
     (chiefofstaff
-      (allowed-locations (parking-lot main-path lobby))
+      (allowed-locations ,*all-nodes*)
       (sighting-msg (You see the "Chief of Staff."))
       (hello (Greetings good worker.))
       (help  (Come find me later I have to greet some visitors.))
@@ -97,6 +99,8 @@
       (default  (Im not bothering anybody.))
     )
     (moe
+      (allowed-locations ,*all-nodes*)
+      (sighting-msg (You see Moe the inventory specialist.))
       (hello (Hi there.))
       (help  (Sure Id love to help.))
       (barcode  (Ahhh I have not found that one yet.))
@@ -106,6 +110,8 @@
       (default  (I dont know... maybe))
     )
     (tate
+      (allowed-locations (lobby))
+      (sighting-msg (Uh-oh here comes Tate.))
       (hello (Yo bro whaddya know on the down low?))
       (help  (Help yourself duuuude.))
       (bye  (Later hater.))
