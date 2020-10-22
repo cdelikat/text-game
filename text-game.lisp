@@ -1,6 +1,7 @@
 ;; loading lol
 
 (load "socket.lisp")
+;(load "kansas.lisp")
 (load "laboratory.lisp")
 
 ;; really need to figure out how to do this by location-
@@ -23,8 +24,17 @@
 (defun describe-location (location nodes)
   (cadr (assoc location nodes)))
 
+;; wanted to change sentence from:
+;; you see a path going north from here.
+;; to
+;; you see a path to the north.
+;; but had a problem smushing the period to the cadr edge 
+;; so see what i had to do to make it work
+;; SIDE-EFFECT: (cadr edge) remains in all caps, but i like that
 (defun describe-path (edge)
-  `(there is a ,(caddr edge) going ,(cadr edge) from here.))
+  `(there is a ,(caddr edge) to the ,(concatenate 'string (string (cadr edge)) "." )))
+  ;`(there is a ,(caddr edge) to the ,(cadr edge)"."))
+  ;`(there is a ,(caddr edge) going ,(cadr edge) from here.))
 
 ;; I wrote this but it functions much like the built-in (assoc)
 ;; couple problems, main one is an unknown location puts it in loop
@@ -57,6 +67,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 ;; player commands
+
+;; laboratory specific code 
 (defun use-badge ()
   (push (list 'front-door '(lobby north door)) *edges*) 
   '(you used your badge to open the front door.)
@@ -128,7 +140,7 @@
 ;; might be simpler just to have player key
 ;; off certain words said by NPC ala Ultima
 ;(defun talk (text &rest text2)
-(defun talk (text)
+(defun talk (text &rest text-more)
   (if (not (equal *nearby-person* nil))
     (respond text *nearby-person*)
    '(theres nobody to talk to near by.)))
@@ -216,7 +228,7 @@
       (game-print (game-eval cmd))
       (game-repl))))
 
-(defun main ()
+(defun start-server ()
   (let ((c (socket-accept (socket-listen 8080))))
     (unwind-protect
       ;(sb-bsd-sockets:socket-send c *data* (length *data*) :external-format :utf-8)
