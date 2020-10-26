@@ -1,8 +1,8 @@
 ;; loading lol
 
 (load "socket.lisp")
-;(load "kansas.lisp")
-(load "laboratory.lisp")
+(load "kansas.lisp")
+;(load "laboratory.lisp")
 
 ;; really need to figure out how to do this by location-
 ;; after random number, figure out if the person can be where the player is
@@ -126,14 +126,20 @@
     ;`(,person runs away.))
 )
 
-(defun walk (direction)
+;; adding code so this handles multiple args better
+;; it used to just crash the program
+;; what if they could say "go living room"
+(defun walk (direction &rest dir-more)
   (let ((next 
           (find direction (cdr (assoc *location* *edges*)) :key #'cadr)))
     (if next
       (progn 
         (setf *location* (car next))
         (look))
-      '(you cannot go that way.))))
+      (progn
+        (if dir-more
+          '(please try "go direction" for example "go north")
+          '(you cannot go that way.))))))
  
 ;; not sure if I want to bother with the
 ;; full sentence parsing thing
