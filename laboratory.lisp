@@ -10,7 +10,7 @@
     (forest-path (You are on the forest path. You see a stream and a log laying across the stream.))
     (forest (You are in the forest. Dont you have to go to work at some point?))
     (stream (You have crossed the stream on the log! This is fun.))
-    (front-door (You are at the front door to the "LSD building." You see an id card reader.))
+    (front-door (You are at the front door to the "LSD" building. You see an id card reader.))
     ;; why does a period after Staff not compile here but the ones above are fine?
     (chief-of-staff-office (You are in the office of the "Chief of Staff." There is a bowl of candy.))
     (entry-room (You have just entered the "LSD" building. You can go anywhere!))
@@ -41,6 +41,7 @@
                                    (raincoat your-car "the back seat.")
                                    (paper your-car "the floor.") 
                                    (pumpkin main-path "the ground.")
+                                   (candy chief-of-staff-office "a bowl.")
                                    (lemon-tree lobby "the left side.")))
 
 ;; flag certain text as 'bye' text, meaning after they say it they leave
@@ -67,6 +68,8 @@
       (allowed-locations ,*all-nodes*)
       (sighting-msg (You see "The Director."))
       (hello (Greetings good worker.))
+      (hi (Greetings good worker.))
+      (hey (Hey yourself.))
       (help  (Come find me later I have to greet some visitors.))
       (default  (Busy busy gotta go!))
       (bye  (The Director waves.))
