@@ -6,7 +6,7 @@
 
 ;; really need to figure out how to do this by location-
 ;; after random number, figure out if the person can be where the player is
-(defun random-encounter2 (enc)
+(defun random-encounter-bad (enc)
  ; based on where you are, you may encounter a coworker 
     (setf *nearby-person* (caaddr (assoc enc *encounters*)))
     (cadr (assoc enc *encounters*)))
@@ -20,6 +20,36 @@
              (member *location* (cadr (assoc 'allowed-locations (cdr (assoc tmp *people*))))))
       (setf *nearby-person* (caadr (assoc enc *encounters*))))
     (cadr (assoc 'sighting-msg (cdr (assoc *nearby-person* *people*))))))
+
+(defun event-check (enc)
+  (setf *current-event* nil)
+  (let ((event (caadr (assoc enc *events-at-moves*))))
+    (if (and (not (eq event nil)) 
+             (member *location* (cadr (assoc 'allowed-locations (cdr (assoc event *events*))))))
+      (setf *current-event* (caadr (assoc enc *events-at-moves*))))
+    (let ((action (cadr (assoc 'action (cdr (assoc event *events*))))))
+      ;(format t "~% ~A ~%" action)
+      (if (not (eq action nil))
+        (eval (list action))))
+    (cadr (assoc 'sighting-msg (cdr (assoc *current-event* *events*))))
+))
+
+(defun thing-check (enc thing1 thing2 thing3)
+  (set thing1 nil)
+  (let ((tmp (caadr (assoc enc thing2))))
+    (if (and (not (eq tmp nil)) 
+             (member *location* (cadr (assoc 'allowed-locations (cdr (assoc tmp thing3))))))
+      (set thing1 (caadr (assoc enc thing2))))
+    (cadr (assoc 'sighting-msg (cdr (assoc (symbol-value thing1) thing3))))
+))
+
+;(defun event-action ()
+(defun event-check2 (enc)
+  (thing-check enc '*current-event* *events-at-moves* *events*)
+)
+(defun random-encounter2 (enc)
+  (thing-check enc '*nearby-person* *encounters* *people*)
+)
 
 (defun describe-location (location nodes)
   (cadr (assoc location nodes)))
@@ -98,12 +128,14 @@
     (describe-location *location* *nodes*)
     (describe-paths *location* *edges*)
     (describe-objects *location* *objects* *object-locations*)
-    (random-encounter (random *total-encounters*))))
+    (random-encounter2 (random *total-encounters*))
+    ;;(event-check *stats-moves*)
+))
 
 (defun wait () 
 )
 
-(defun openthing (thing)
+(defun openthing (thing &rest thing-more)
   (let ((d (find thing (cdr (assoc *location* *edges*)) :key #'caddr)))
     (if (eq d nil) 
       `(there is no ,thing nearby.)
@@ -151,7 +183,7 @@
     (respond text *nearby-person*)
    '(theres nobody to talk to near by.)))
   
-(defun pickup (object)
+(defun pickup (object &rest obj-more)
   (cond 
     ;; Is the object I want to pickup in the location that I am?
     ((member object (objects-at *location* *objects* *object-locations*)) 
@@ -161,7 +193,7 @@
      (t '(you cannot get that.))))      
 
 ;; nf
-(defun inventory ()
+(defun inventory (a &rest b)
   (cons 'items- (objects-at 'body *objects* *object-locations*)))
 
 (defparameter *synonym-pickup* '(grab get take))
@@ -182,6 +214,8 @@
 ;; what if I keep track of things they try to do but arent allowed?
 ;; nf
 (defun game-eval (sexp)
+  (progn
+    ;(format t "~% ~A ~%" sexp)
   (if (member (car sexp) *allowed-commands*)
     (cond
       ((member (car sexp) *synonym-pickup*) (eval (cons 'pickup (cdr sexp))))
@@ -190,7 +224,8 @@
       ((member (car sexp) *synonym-open*) (eval (cons 'openthing (cdr sexp))))
       ;((equal (car sexp) 'stats) (eval '(stats)))
       (t (eval sexp)))
-  '(i do not know that command.)))
+  '(?SYNTAX ERROR))))
+  ;;'(i do not know that command.)))
 
 ;; my temporary game-print, the real one is really complicated...
 ;(defun game-print (x)
@@ -209,11 +244,13 @@
         (t (cons (char-downcase item) (tweak-text rest nil nil)))))))
 
 ;; nf
+;; added if not eq nil to accomodate use of event-check in game-repl
 (defun game-print (lst)
+  (if (not (eq nil lst))
   (princ 
     (coerce 
       (tweak-text (coerce (string-trim "() " (prin1-to-string lst)) 'list) t nil) 
-      'string))
+      'string)))
   (fresh-line))
 
 ;; nf
@@ -229,7 +266,11 @@
 (defun game-repl ()
   (let ((cmd (game-read (read-line))))
     (if (not (eq (car cmd) 'stats))
-      (setq *stats-moves* (+ *stats-moves* 1)))
+      (progn
+        (setq *stats-moves* (+ *stats-moves* 1))
+        (game-print (event-check *stats-moves*))
+      )
+    )
     (unless (eq (car cmd) 'quit) 
       (game-print (game-eval cmd))
       (game-repl))))
@@ -251,3 +292,4 @@
 ;; use objects in certain locations
 ;; stats with move counter
 ;; more descriptive object locations
+;; events
