@@ -6,17 +6,19 @@
 ;; according to their respective direction lists
 (defun checker ()
   (dolist (lista *edges*)
-    (format t "~%lista =  ~A ~%" lista)
+    ;(format t "~%lista =  ~A ~%" lista)
     (let ((main-loc-name (car lista))(main-dir-list (cdr lista)))
       (dolist (listb main-dir-list)
         (let ((next-loc-name (car listb))(next-loc-dir (cadr listb)))
           (if (not (eq (opp-dir next-loc-dir) 
                   (cadr (assoc main-loc-name (cdr (assoc next-loc-name *edges*))))))
               ;;(format t "~% ~A is ~A of ~A~%" next-loc-name next-loc-dir main-loc-name)
+              (progn 
+                (format t "~%lista =  ~A ~%" lista)
               (cond
                 ((eq nil (assoc next-loc-name *edges*)) (format t "~% NO ~A in *edges* ~%" next-loc-name))
                 (t (format t "~% ~A is NOT ~A of ~A~%" next-loc-name next-loc-dir main-loc-name)))
-          ))
+          )))
         )
       )))
 
