@@ -1,3 +1,5 @@
+;; got this from the internet
+
 (require 'sb-bsd-sockets)
 
 (defparameter socket-any-address '(0 0 0 0))
@@ -23,6 +25,8 @@
 (defun socket-server-close (s)
   (sb-bsd-sockets:socket-close s))
 
+
+;;;; test functions
 (defparameter *data* (format nil "deli~%"))
 
 (defun srepl (s)
