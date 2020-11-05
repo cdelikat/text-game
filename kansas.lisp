@@ -2,6 +2,7 @@
 (defparameter *location* 'bedroom)
 (defparameter *player* "Stella")
 (defparameter *nearby-person* nil)
+(defparameter *current-event* nil)
 (defparameter *stats-moves* 0)
 
 (defparameter *nodes* 
@@ -20,7 +21,7 @@
     (hall3 (You are in the hall in your house. ))
     (hall4 (You are in the hall in your house. ))
     (laundry-room (You are in the laundry room. ))
-    (kitchen (You are in the kitchen room. ))
+    (kitchen (You are in the kitchen. ))
 ))
 
 (defparameter *all-nodes* (mapcar #'car *nodes*))
@@ -34,9 +35,9 @@
     (living-room (hall west "hall") (hall2 north "hall"))
     (closet (bedroom west "closet door"))
     (test (test2 north door))
-    (laundry-room (kitchen west "the kitchen") (back-porch east "back porch") (hall4 west hall))
+    (laundry-room (back-porch east "back porch") (hall4 west hall))
     (doorstep (foyer east "front door") (front-yard south "front yard"))
-    (kitchen (dining-room south "the dining room") (hall4 east "the hall") (laundry-room east "laundry room"))
+    (kitchen (dining-room south "the dining room") (hall4 east "the hall"))
     (dining-room (foyer south "the foyer") (kitchen north "the kitchen") (hall3 east "a hall"))
     (foyer (doorstep west doorstep)(hall2 east "a hallway") (dining-room north "dining room") (hall south "another hall"))
     (front-yard (side-yard3 east grass) (doorstep north sidewalk) (side-yard south grass))
@@ -60,11 +61,14 @@
 ;; SPECIAL keys:
 ;; allowed-locations: where can this character be seen?
 ;; sighting: what is said when char is seen
+;; hello
+;; bye
+;; default
 (defparameter *people*
   `((auntem
       (allowed-locations (living-room kitchen))
       (sighting-msg (You see your Aunt.))
-      (hello (hi there ,*player* how are you?))
+      (hello (hi there ,*player*))
       (help  (im never that much help with anything.))
       (bye ("See you later honey, she says."))
       (default  (Thats great honey!))
@@ -80,7 +84,7 @@
     (zeke
       (allowed-locations ,*all-nodes*)
       (sighting-msg (Here comes Zeke.))
-      (hello (Hello ,*player* how are you today?))
+      (hello (Hello ,*player*))
       (help  (Sure Id love to help.))
       (default  (Just busy doing my work here on the farm.))
     )
@@ -94,7 +98,7 @@
     (hickory
       (allowed-locations ,*all-nodes*)
       (sighting-msg (Theres old Hickory.))
-      (hello (Hello ,*player* I hope you are felling well.))
+      (hello (Hello ,*player*))
       (help  (Sure Id love to help.))
       (default  (I dont know what to feel about that.))
     )
@@ -113,3 +117,52 @@
     (7 ())
     (8 ())))
 
+(defparameter *events-at-moves* 
+  '((10 (tornado-approaching))
+    (15 (tornado-closer))
+    (20 (tornado-struck))
+    (8 ())))
+
+(defun reset-locale ()
+  (load "laboratory.lisp")
+  ;; change edges
+  ;; change nodes
+  ;; change people
+  ;; change objects
+  ;; can I basically (load "oz.lisp") to overwrite the variables?
+)
+;; events occur after a certain number of moves
+;; moves is my crude time keeping technique at the moment
+;; after each move, in the look function, it will check for 
+;; an event based on # moves and location
+;; Events can change the look of a place by adding new description
+;; to nodes (how) just push like when you pick up an object
+;; and its still at the place you found it but your "body" 
+;; location is more recent in the list
+
+;; another idea: dinner-
+;; changes the description of a node: dining-room
+;; AND adds a bunch of people to that place
+;; AND objects
+(defparameter *events*
+  `(
+    (tornado-approaching
+      (sighting-msg (A tornado is approaching you can see it in the distance))
+      (allowed-locations ,*all-nodes*)
+      (action nil))
+    (tornado-closer
+      (sighting-msg (The tornado is closer its getting really windy outside the windows are rattling.))
+      (allowed-locations ,*all-nodes*)
+      (action nil))
+    (tornado-struck
+      (sighting-msg (The tornado has struck!))
+      (allowed-locations ,*all-nodes*)
+      (action reset-locale))
+))
+
+
+
+;; will want to create a way for people to join you
+;; just like the object functions, you can join someone
+;; and they get attached to you and leave the random encounter
+;; somehow...
