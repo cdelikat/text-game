@@ -2,6 +2,7 @@
 (defparameter *location* 'your-car)
 (defparameter *nearby-person* nil)
 (defparameter *stats-moves* 0)
+(defparameter *current-event* nil)
 
 (defparameter *nodes* 
   '((parking-lot (You are in the parking lot just south of the "Laboratories" for "Sciences" "Department."))
@@ -137,3 +138,24 @@
     (7 ())
     (8 ())))
 
+(defparameter *events-at-moves*
+  '((10 (nine-oclock))
+    (15 (ten-oclock))
+    (20 (eleven-oclock))
+    (8 ())))
+
+(defparameter *events*
+  `(
+    (nine-oclock
+      (sighting-msg (It is now nine oclock time for work!))
+      (allowed-locations ,*all-nodes*)
+      (action nil))
+    (ten-oclock
+      (sighting-msg (It is now ten oclock.))
+      (allowed-locations ,*all-nodes*)
+      (action nil))
+    (eleven-oclock
+      (sighting-msg (It is now eleven oclock.))
+      (allowed-locations ,*all-nodes*)
+      (action nil))
+))
