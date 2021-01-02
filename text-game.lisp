@@ -29,6 +29,7 @@
       (setf *current-event* (caadr (assoc enc *events-at-moves*))))
     (let ((action (cadr (assoc 'action (cdr (assoc event *events*))))))
       ;(format t "~% ~A ~%" action)
+      ;; BUG: if there's an action, we never see the sighting-msg
       (if (not (eq action nil))
         (eval (list action))))
     (cadr (assoc 'sighting-msg (cdr (assoc *current-event* *events*))))
@@ -161,7 +162,9 @@
 ;; adding code so this handles multiple args better
 ;; it used to just crash the program
 ;; what if they could say "go living room"
-(defun walk (direction &rest dir-more)
+;; and the command line reported each move made to get you there
+;; as you were moved, kinda like Silversword and the coach
+(defun walk (&optional direction &rest dir-more)
   (let ((next 
           (find direction (cdr (assoc *location* *edges*)) :key #'cadr)))
     (if next
@@ -183,7 +186,9 @@
     (respond text *nearby-person*)
    '(theres nobody to talk to near by.)))
   
-(defun pickup (object &rest obj-more)
+;; need to sanitize object
+;; putting semicolon causes crash
+(defun pickup (&optional object &rest obj-more)
   (cond 
     ;; Is the object I want to pickup in the location that I am?
     ((member object (objects-at *location* *objects* *object-locations*)) 
@@ -193,11 +198,11 @@
      (t '(you cannot get that.))))      
 
 ;; nf
-(defun inventory (a &rest b)
+(defun inventory ()
   (cons 'items- (objects-at 'body *objects* *object-locations*)))
 
 (defparameter *synonym-pickup* '(grab get take))
-(defparameter *synonym-walk* '(go move run))
+(defparameter *synonym-walk* '(walk go move run))
 (defparameter *synonym-talk* '(say speak shout whisper respond ask))
 (defparameter *synonym-open* '(open unlock openthing))
 (defparameter *allowed-commands* (append '(look walk talk pickup inventory stats use) *synonym-pickup* *synonym-walk* *synonym-talk* *synonym-open*))
@@ -218,12 +223,20 @@
     ;(format t "~% ~A ~%" sexp)
   (if (member (car sexp) *allowed-commands*)
     (cond
+      ;; TODO why cant i just send cadr of sexp to eval, to drop extra args??
+      ;; More Impt TODO: add nil check for these funcs to prevent crash
       ((member (car sexp) *synonym-pickup*) (eval (cons 'pickup (cdr sexp))))
       ((member (car sexp) *synonym-walk*) (eval (cons 'walk (cdr sexp))))
       ((member (car sexp) *synonym-talk*) (eval (cons 'talk (cdr sexp))))
       ((member (car sexp) *synonym-open*) (eval (cons 'openthing (cdr sexp))))
-      ;((equal (car sexp) 'stats) (eval '(stats)))
-      (t (eval sexp)))
+      ; I do this to prevent crash if user passes args to these funcs
+      ((equal (car sexp) 'inventory) (eval '(inventory)))
+      ((equal (car sexp) 'stats) (eval '(stats)))
+      ((equal (car sexp) 'look) (eval '(look)))
+      ((equal (car sexp) 'use) (eval (cons 'use (cdr sexp))))
+      ;; should get away from this for safety reasons-- to easy to crash
+      ;(t (eval sexp))
+  )
   '(?SYNTAX ERROR))))
   ;;'(i do not know that command.)))
 
@@ -263,14 +276,15 @@
       (force-output s)
       (game-repl-sock s))))
 
+;; TODO Sanitize input, semicolons crash!!!
 (defun game-repl ()
   (let ((cmd (game-read (read-line))))
+    ;(print cmd)
+    ;(format t "~% ~A ~A ~%" cmd *stats-moves*)
     (if (not (eq (car cmd) 'stats))
       (progn
-        (setq *stats-moves* (+ *stats-moves* 1))
-        (game-print (event-check *stats-moves*))
-      )
-    )
+        (setq *stats-moves* (+ *stats-moves* 1))    ;; incr total moves
+        (game-print (event-check *stats-moves*))))  ;; is there an event at this move number?
     (unless (eq (car cmd) 'quit) 
       (game-print (game-eval cmd))
       (game-repl))))
