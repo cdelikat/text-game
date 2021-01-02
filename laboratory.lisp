@@ -57,7 +57,7 @@
       (hello (hi friend its me claude.))
       (help  (im never that much help with anything.))
       (inventory (im working on finding my things right now.))
-      (things (you items i use for my science experiments and so forth.))
+      (things (you know items i use for my science experiments and so forth.))
       (barcode (i havent seen that one lately))
       (lately (lately? i meant ever. i have never seen that barcode))
       (never (never is hard to really quantify i mean who knows i may have ))
