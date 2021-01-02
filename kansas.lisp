@@ -21,6 +21,7 @@
     (hall3 (You are in the hall in your house. ))
     (hall4 (You are in the hall in your house. ))
     (laundry-room (You are in the laundry room. ))
+    (back-porch (You are on the back porch. ))
     (kitchen (You are in the kitchen. ))
 ))
 
@@ -121,7 +122,7 @@
   '((10 (tornado-approaching))
     (15 (tornado-closer))
     (20 (tornado-struck))
-    (8 ())))
+    (80 ())))
 
 (defun reset-locale ()
   (load "laboratory.lisp")
