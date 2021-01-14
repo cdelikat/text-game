@@ -207,20 +207,26 @@
 (defparameter *synonym-open* '(open unlock openthing))
 (defparameter *allowed-commands* (append '(look walk talk pickup inventory stats use) *synonym-pickup* *synonym-walk* *synonym-talk* *synonym-open*))
 
+(defparameter *illegal-chars* '( ? ! $ % \# \, \. ))
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;; Core game functions
 ;; nf
 (defun game-read (rcmd)
+  (ignore-errors
+  ;(if (member rcmd *illegal-chars*)
+  ;(if (not (alpha-char-p rcmd))
+    ;(format t "~% ~A ~A ~%" "game-read" rcmd)
   (let ((cmd (read-from-string
     (concatenate 'string "(" rcmd ")"))))
+    ;(format t "~% ~A ~A ~%" "game-read 2" cmd)
     (flet ((quote-it (x) (list 'quote x)))
-      (cons (car cmd) (mapcar #'quote-it (cdr cmd))))))
+      (cons (car cmd) (mapcar #'quote-it (cdr cmd)))))))
 
 ;; what if I keep track of things they try to do but arent allowed?
 ;; nf
 (defun game-eval (sexp)
   (progn
-    ;(format t "~% ~A ~%" sexp)
+    ;(format t "~% ~A ~A ~%" "game-eval" sexp)
   (if (member (car sexp) *allowed-commands*)
     (cond
       ;; TODO why cant i just send cadr of sexp to eval, to drop extra args??
@@ -280,7 +286,7 @@
 (defun game-repl ()
   (let ((cmd (game-read (read-line))))
     ;(print cmd)
-    ;(format t "~% ~A ~A ~%" cmd *stats-moves*)
+    ;(format t "~% ~A ~A ~%" "game-repl" cmd)
     (if (not (eq (car cmd) 'stats))
       (progn
         (setq *stats-moves* (+ *stats-moves* 1))    ;; incr total moves
