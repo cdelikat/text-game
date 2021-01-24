@@ -1,2 +1,4 @@
 (load "text-game.lisp")
-(game-repl)
+;(game-repl)
+(start-with-name)
+;(start-server)
