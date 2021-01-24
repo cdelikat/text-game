@@ -1,8 +1,18 @@
 ;; loading lol
 
+(defparameter *player* nil)
+(defparameter *people* nil)
+
 (load "socket.lisp")
-(load "kansas.lisp")
-;(load "laboratory.lisp")
+(load "laboratory.lisp")
+;(load "kansas.lisp")
+(defun start-with-name ()
+  (progn
+    (format t "~% Enter your name:")
+    (setf *player* (read-line))
+    (load "laboratory-people.lisp")
+    (game-repl)))
+
 
 ;; really need to figure out how to do this by location-
 ;; after random number, figure out if the person can be where the player is
@@ -282,11 +292,18 @@
       (force-output s)
       (game-repl-sock s))))
 
+; temp file 
+; (concatenate 'string "textgame_" (write-to-string (get-internal-real-time)) ".log")
+(defun loggit (fun msg)
+  (with-open-file 
+    (my-stream "/tmp/test.log" :direction :output :if-does-not-exist :create :if-exists :append)
+      (format my-stream "~% [~A] ~A ~%" fun msg)))
+
 ;; TODO Sanitize input, semicolons crash!!!
 (defun game-repl ()
   (let ((cmd (game-read (read-line))))
     ;(print cmd)
-    ;(format t "~% ~A ~A ~%" "game-repl" cmd)
+    (loggit "game-repl: cmd" cmd)
     (if (not (eq (car cmd) 'stats))
       (progn
         (setq *stats-moves* (+ *stats-moves* 1))    ;; incr total moves
@@ -305,6 +322,7 @@
       (game-repl-sock stream))
     (sb-bsd-sockets:socket-close c))))
 
+ 
 ;; Stuff Ive added:
 ;; random encounters
 ;; talking engine
