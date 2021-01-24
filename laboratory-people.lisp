@@ -1,0 +1,81 @@
+;; flag certain text as 'bye' text, meaning after they say it they leave
+;; also have a default if theres no key word hits
+;; SPECIAL keys:
+;; allowed-locations: where can this character be seen?
+;; sighting: what is said when char is seen
+(defparameter *people*
+  `((claude 
+      (allowed-locations ,*all-nodes*)
+      (sighting-msg (You see Claude))
+      (hello (hi ,*player* its me claude.))
+      (help  (im never that much help with anything.))
+      (inventory (im working on finding my things right now.))
+      (things (you know items i use for my science experiments and so forth.))
+      (barcode (i havent seen that one lately))
+      (lately (lately? i meant ever. i have never seen that barcode))
+      (never (never is hard to really quantify i mean who knows i may have ))
+      (ever (ever? well i hate to be so definitive who knows? am i right?))
+      (default (one of those days already how about you?))
+      (bye (Claude continues talking as you turn and move away.))
+    )
+    (thedirector
+      (allowed-locations ,*all-nodes*)
+      (sighting-msg (You see "The Director."))
+      (hello (Greetings good worker.))
+      (hi (Greetings ,*player*))
+      (hey (Hey yourself.))
+      (help  (Come find me later I have to greet some visitors.))
+      (default  (Busy busy gotta go!))
+      (bye  (The Director waves.))
+    )
+    (chiefofstaff
+      (allowed-locations ,*all-nodes*)
+      (sighting-msg (You see the "Chief of Staff."))
+      (hello (Greetings ,*player*))
+      (help  (Come find me later I have to greet some visitors.))
+      (inventory  (Talk to the inventory specialist.))
+      (specialist  (Dont mess with me you know who it is.))
+      (who  (Just do it!))
+      (default  (Have you finished your inventory?))
+      (bye  (Later))
+    )
+    (joe
+      (hello (Hey ,*player*))
+      (help  (Sure Id love to help.))
+      (inventory  (You need to talk to Moe.))
+      (default  (Wrong "Joe."))
+    )
+    (franciscorouter
+      (hello (Helo sir.))
+      (help  (Im glad you asked. Im trying to get this code to compile.))
+      (default  (Id love to answer but Im not sure.))
+    )
+    (mushroombroker
+      (allowed-locations (parking-lot main-path lobby))
+      (sighting-msg (You see a mushroom broker.))
+      (hello (I see many fine mushrooms around this building.))
+      (help  (I need some help carrying all these mushrooms.))
+      (mushroom  (Mushrooms have many many uses. For example eating.))
+      (default  (Im not bothering anybody.))
+    )
+    (moe
+      (allowed-locations ,*all-nodes*)
+      (sighting-msg (You see Moe the inventory specialist.))
+      (hello (Hi there ,*player*))
+      (help  (Sure Id love to help.))
+      (barcode  (Ahhh I have not found that one yet.))
+      (barcode-12345  (Ahhh I have not found that one yet either.))
+      (barcode-2345  (Ahhh I really need that one.))
+      (inventory  (Thats what I do best. What barcode are you looking for?))
+      (default  (I dont know... maybe))
+    )
+    (tate
+      (allowed-locations (lobby))
+      (sighting-msg (Uh-oh here comes Tate.))
+      (hello (Yo bro whaddya know on the down low?))
+      (help  (Help yourself duuuude.))
+      (bye  (Later hater.))
+      (default  (Whats the matter man?))
+    )
+  ))
+
