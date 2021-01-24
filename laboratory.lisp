@@ -10,7 +10,7 @@
     (main-path (You are on the path to the door to the "LSD" building. You see a bench.))
     (forest-path (You are on the forest path. You see a stream and a log laying across the stream.))
     (forest (You are in the forest. Dont you have to go to work at some point?))
-    (stream (You have crossed the stream on the log! This is fun.))
+    (stream (You have crossed the stream on the log! You are now having fun.))
     (front-door (You are at the front door to the "LSD" building. You see an id card reader.))
     ;; why does a period after Staff not compile here but the ones above are fine?
     (chief-of-staff-office (You are in the office of the "Chief of Staff." There is a bowl of candy.))
@@ -35,7 +35,7 @@
     (chief-of-staff-office (entry-room south doorway))
     (front-door (main-path south path))))
 
-(defparameter *objects* '(badge lunch raincoat paper pumpkin lemon-tree))
+(defparameter *objects* '(badge lunch raincoat paper pumpkin candy lemon-tree))
 
 (defparameter *object-locations* '((badge your-car "the passenger seat.") 
                                    (lunch your-car "the passenger seat.") 
@@ -44,86 +44,6 @@
                                    (pumpkin main-path "the ground.")
                                    (candy chief-of-staff-office "a bowl.")
                                    (lemon-tree lobby "the left side.")))
-
-;; flag certain text as 'bye' text, meaning after they say it they leave
-;; also have a default if theres no key word hits
-;; SPECIAL keys:
-;; allowed-locations: where can this character be seen?
-;; sighting: what is said when char is seen
-(defparameter *people*
-  `((claude 
-      (allowed-locations ,*all-nodes*)
-      (sighting-msg (You see Claude))
-      (hello (hi friend its me claude.))
-      (help  (im never that much help with anything.))
-      (inventory (im working on finding my things right now.))
-      (things (you know items i use for my science experiments and so forth.))
-      (barcode (i havent seen that one lately))
-      (lately (lately? i meant ever. i have never seen that barcode))
-      (never (never is hard to really quantify i mean who knows i may have ))
-      (ever (ever? well i hate to be so definitive who knows? am i right?))
-      (default (one of those days already how about you?))
-      (bye (Claude continues talking as you turn and move away.))
-    )
-    (thedirector
-      (allowed-locations ,*all-nodes*)
-      (sighting-msg (You see "The Director."))
-      (hello (Greetings good worker.))
-      (hi (Greetings good worker.))
-      (hey (Hey yourself.))
-      (help  (Come find me later I have to greet some visitors.))
-      (default  (Busy busy gotta go!))
-      (bye  (The Director waves.))
-    )
-    (chiefofstaff
-      (allowed-locations ,*all-nodes*)
-      (sighting-msg (You see the "Chief of Staff."))
-      (hello (Greetings good worker.))
-      (help  (Come find me later I have to greet some visitors.))
-      (inventory  (Talk to the inventory specialist.))
-      (specialist  (Dont mess with me you know who it is.))
-      (who  (Just do it!))
-      (default  (Have you finished your inventory?))
-      (bye  (Later))
-    )
-    (joe
-      (hello (Hey man.))
-      (help  (Sure Id love to help.))
-      (default  (Wrong "Joe."))
-    )
-    (franciscorouter
-      (hello (Helo sir.))
-      (help  (Im glad you asked. Im trying to get this code to compile.))
-      (default  (Wrong "Joe."))
-    )
-    (mushroombroker
-      (allowed-locations (parking-lot main-path lobby))
-      (sighting-msg (You see a mushroom broker.))
-      (hello (I see many fine mushrooms around this building.))
-      (help  (I need some help carrying all these mushrooms.))
-      (mushroom  (Mushrooms have many many uses. For example eating.))
-      (default  (Im not bothering anybody.))
-    )
-    (moe
-      (allowed-locations ,*all-nodes*)
-      (sighting-msg (You see Moe the inventory specialist.))
-      (hello (Hi there.))
-      (help  (Sure Id love to help.))
-      (barcode  (Ahhh I have not found that one yet.))
-      (barcode-12345  (Ahhh I have not found that one yet either.))
-      (barcode-2345  (Ahhh I really need that one.))
-      (inventory  (Thats what I do best. What barcode are you looking for?))
-      (default  (I dont know... maybe))
-    )
-    (tate
-      (allowed-locations (lobby))
-      (sighting-msg (Uh-oh here comes Tate.))
-      (hello (Yo bro whaddya know on the down low?))
-      (help  (Help yourself duuuude.))
-      (bye  (Later hater.))
-      (default  (Whats the matter man?))
-    )
-  ))
 
 (defparameter *total-encounters* 9)
 ;; delete greetings and fix random-enc function
@@ -144,6 +64,8 @@
     (20 (eleven-oclock))
     (8 ())))
 
+;; need to put marks around event messages so they
+;; are distinguished from text if you are talking to someone
 (defparameter *events*
   `(
     (nine-oclock
