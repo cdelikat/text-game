@@ -10,7 +10,9 @@
   (progn
     (format t "~% Enter your name:")
     (setf *player* (read-line))
+    (loggit "start-with-name: name" *player*)
     (load "laboratory-people.lisp")
+    (format t "~% The game has begun. Type \"look\" to see your surroundings. ~%")
     (game-repl)))
 
 
@@ -211,11 +213,11 @@
 (defun inventory ()
   (cons 'items- (objects-at 'body *objects* *object-locations*)))
 
-(defparameter *synonym-pickup* '(grab get take))
+(defparameter *synonym-pickup* '(pickup grab get take))
 (defparameter *synonym-walk* '(walk go move run))
-(defparameter *synonym-talk* '(say speak shout whisper respond ask))
+(defparameter *synonym-talk* '(talk say speak shout whisper respond ask))
 (defparameter *synonym-open* '(open unlock openthing))
-(defparameter *allowed-commands* (append '(look walk talk pickup inventory stats use) *synonym-pickup* *synonym-walk* *synonym-talk* *synonym-open*))
+(defparameter *allowed-commands* (append '(look inventory stats use) *synonym-pickup* *synonym-walk* *synonym-talk* *synonym-open*))
 
 (defparameter *illegal-chars* '( ? ! $ % \# \, \. ))
 ;;;;;;;;;;;;;;;;;;;;;;;
@@ -297,7 +299,7 @@
 (defun loggit (fun msg)
   (with-open-file 
     (my-stream "/tmp/test.log" :direction :output :if-does-not-exist :create :if-exists :append)
-      (format my-stream "~% [~A] ~A ~%" fun msg)))
+      (format my-stream "~% {~A} [~A] ~A ~%" *player* fun msg)))
 
 ;; TODO Sanitize input, semicolons crash!!!
 (defun game-repl ()
