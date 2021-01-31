@@ -193,7 +193,7 @@
 ;; might be simpler just to have player key
 ;; off certain words said by NPC ala Ultima
 ;(defun talk (text &rest text2)
-(defun talk (text &rest text-more)
+(defun talk (&optional text &rest text-more)
   (if (not (equal *nearby-person* nil))
     (respond text *nearby-person*)
    '(theres nobody to talk to near by.)))
@@ -236,6 +236,7 @@
 
 ;; what if I keep track of things they try to do but arent allowed?
 ;; nf
+;; TODO turn this into macros instead of evals
 (defun game-eval (sexp)
   (progn
     ;(format t "~% ~A ~A ~%" "game-eval" sexp)
