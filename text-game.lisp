@@ -5,6 +5,7 @@
 
 (load "socket.lisp")
 (load "laboratory.lisp")
+(setf *random-state* (make-random-state t))
 ;(load "kansas.lisp")
 (defun start-with-name ()
   (progn
@@ -148,11 +149,13 @@
 (defun wait () 
 )
 
-(defun openthing (thing &rest thing-more)
+(defun openthing (&optional thing &rest thing-more)
   (let ((d (find thing (cdr (assoc *location* *edges*)) :key #'caddr)))
-    (if (eq d nil) 
-      `(there is no ,thing nearby.)
-      `(you opened the ,thing"."))))
+    (cond
+      ((eq thing nil) '(open what?))
+      ((eq d nil) `(there is no ,thing nearby.))
+      (t `(you opened the ,(concatenate 'string (string thing) ".")))
+)))
   
 ;; Player should be able to say bye
 ;; NPC should also say bye at some point
@@ -176,8 +179,11 @@
 ;; what if they could say "go living room"
 ;; and the command line reported each move made to get you there
 ;; as you were moved, kinda like Silversword and the coach
-(defun walk (&optional direction &rest dir-more)
-  (let ((next 
+(defun walk (&optional (direction "none" dp) &rest dir-more)
+  (cond 
+    ((equal direction "none") '(try giving a compass direction))
+    ((not (member direction '(north south east west))) '(Try something like north or east))
+    ((let ((next 
           (find direction (cdr (assoc *location* *edges*)) :key #'cadr)))
     (if next
       (progn 
@@ -186,7 +192,7 @@
       (progn
         (if dir-more
           '(please try "go direction" for example "go north")
-          '(you cannot go that way.))))))
+          '(you cannot go that way.))))))))
  
 ;; not sure if I want to bother with the
 ;; full sentence parsing thing
