@@ -118,8 +118,16 @@
   '(you used your badge to open the front door.)
 )
 
-(defun use (item)
+(defun examine (&optional item)
   (cond
+    ((eq item nil)  '(Examine what?))
+    ((not (member item (objects-at 'body *objects* *object-locations*))) '(you dont have that!))
+    ((member item (objects-at 'body *objects* *object-locations*)) (cadr (assoc item *object-descriptions*)))))
+
+
+(defun use (&optional item)
+  (cond
+    ((eq item nil)  '(Use what?))
     ((not (member item (objects-at 'body *objects* *object-locations*))) '(you dont have that!))
     ;; to use the badge, you must 
     ;; 1) have the badge
@@ -179,9 +187,11 @@
 ;; what if they could say "go living room"
 ;; and the command line reported each move made to get you there
 ;; as you were moved, kinda like Silversword and the coach
-(defun walk (&optional (direction "none" dp) &rest dir-more)
+;(defun walk (&optional (direction "none" dp) &rest dir-more)
+(defun walk (&optional direction &rest dir-more)
   (cond 
-    ((equal direction "none") '(try giving a compass direction))
+    ((eq direction nil) '(try giving a compass direction))
+    ;((equal direction "none") '(try giving a compass direction))
     ((not (member direction '(north south east west))) '(Try something like north or east))
     ((let ((next 
           (find direction (cdr (assoc *location* *edges*)) :key #'cadr)))
@@ -223,7 +233,7 @@
 (defparameter *synonym-walk* '(walk go move run))
 (defparameter *synonym-talk* '(talk say speak shout whisper respond ask))
 (defparameter *synonym-open* '(open unlock openthing))
-(defparameter *allowed-commands* (append '(look inventory stats use) *synonym-pickup* *synonym-walk* *synonym-talk* *synonym-open*))
+(defparameter *allowed-commands* (append '(look inventory stats use examine) *synonym-pickup* *synonym-walk* *synonym-talk* *synonym-open*))
 
 (defparameter *illegal-chars* '( ? ! $ % \# \, \. ))
 ;;;;;;;;;;;;;;;;;;;;;;;
@@ -259,6 +269,7 @@
       ((equal (car sexp) 'stats) (eval '(stats)))
       ((equal (car sexp) 'look) (eval '(look)))
       ((equal (car sexp) 'use) (eval (cons 'use (cdr sexp))))
+      ((equal (car sexp) 'examine) (eval (cons 'examine (cdr sexp))))
       ;; should get away from this for safety reasons-- to easy to crash
       ;(t (eval sexp))
   )
