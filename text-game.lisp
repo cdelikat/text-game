@@ -2,6 +2,7 @@
 
 (defparameter *player* nil)
 (defparameter *people* nil)
+(defparameter *used-badge* 0)
 
 (load "socket.lisp")
 (load "laboratory.lisp")
@@ -76,7 +77,19 @@
 ;; so see what i had to do to make it work
 ;; SIDE-EFFECT: (cadr edge) remains in all caps, but i like that
 (defun describe-path (edge)
-  `(there is a ,(caddr edge) to the ,(concatenate 'string (string (cadr edge)) "." )))
+  ;(format t "~A~%" edge)
+  (cond 
+  ((and (= (length edge) 4) (not (equal (car edge) 'LOCKED)))
+  ;; use specially designated phrase included in edge, eg "going" for up or down
+  `(there is a ,(caddr edge) ,(fourth edge) ,(concatenate 'string (string (cadr edge)) "." )))
+  ((and (= (length edge) 4) (equal (car edge) 'LOCKED))
+  ;; if its 4 and the first one IS LOCKED, just use "to the"
+  `(there is a locked ,(cadddr edge) to the ,(concatenate 'string (string (caddr edge)) "." )))
+  ;; otherwsie its just a regular 3 part edge
+  ((not (= (length edge) 4)) 
+  `(there is a ,(caddr edge) to the ,(concatenate 'string (string (cadr edge)) "." )))))
+
+
   ;`(there is a ,(caddr edge) to the ,(cadr edge)"."))
   ;`(there is a ,(caddr edge) going ,(cadr edge) from here.))
 
@@ -114,6 +127,7 @@
 
 ;; laboratory specific code 
 (defun use-badge ()
+  (setf *used-badge* *stats-moves*)
   (push (list 'front-door '(lobby north door)) *edges*) 
   '(you used your badge to open the front door.)
 )
@@ -192,9 +206,11 @@
   (cond 
     ((eq direction nil) '(try giving a compass direction))
     ;((equal direction "none") '(try giving a compass direction))
-    ((not (member direction '(north south east west))) '(Try something like north or east))
+    ((not (member direction '(north south east west up down))) '(Try something like north or east))
     ((let ((next 
           (find direction (cdr (assoc *location* *edges*)) :key #'cadr)))
+    ;; set it up to load a new map if they go up or down
+    ;; not necessary but makes it easier tp keep track of areas
     (if next
       (progn 
         (setf *location* (car next))
@@ -324,6 +340,10 @@
   (let ((cmd (game-read (read-line))))
     ;(print cmd)
     (loggit "game-repl: cmd" cmd)
+    (if (and (> *used-badge* 0) (= (+ 2 *used-badge*) *stats-moves*))
+      (progn
+        (setq *edges* (cdr *edges*))
+        (setq *used-badge* 0)))
     (if (not (eq (car cmd) 'stats))
       (progn
         (setq *stats-moves* (+ *stats-moves* 1))    ;; incr total moves
