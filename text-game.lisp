@@ -159,14 +159,17 @@
 (defun stats ()
   `(you have made ,*stats-moves* moves.))
 
-(defun look ()
-  (append 
-    (describe-location *location* *nodes*)
-    (describe-paths *location* *edges*)
-    (describe-objects *location* *objects* *object-locations*)
-    (random-encounter2 (random *total-encounters*))
+(defun look (&optional item)
+  (cond 
+    ((not (eq item nil)) (examine item))
+    (t  (append 
+          (describe-location *location* *nodes*)
+          (describe-paths *location* *edges*)
+          (describe-objects *location* *objects* *object-locations*)
+          (random-encounter2 (random *total-encounters*)))))
     ;;(event-check *stats-moves*)
-))
+)
+
 
 (defun wait () 
 )
@@ -242,14 +245,14 @@
      (t '(you cannot get that.))))      
 
 ;; nf
-(defun inventory ()
+(defun items ()
   (cons 'items- (objects-at 'body *objects* *object-locations*)))
 
 (defparameter *synonym-pickup* '(pickup grab get take))
 (defparameter *synonym-walk* '(walk go move run))
 (defparameter *synonym-talk* '(talk say speak shout whisper respond ask))
 (defparameter *synonym-open* '(open unlock openthing))
-(defparameter *allowed-commands* (append '(look inventory stats use examine) *synonym-pickup* *synonym-walk* *synonym-talk* *synonym-open*))
+(defparameter *allowed-commands* (append '(look items stats use examine) *synonym-pickup* *synonym-walk* *synonym-talk* *synonym-open*))
 
 (defparameter *illegal-chars* '( ? ! $ % \# \, \. ))
 ;;;;;;;;;;;;;;;;;;;;;;;
@@ -280,10 +283,12 @@
       ((member (car sexp) *synonym-walk*) (eval (cons 'walk (cdr sexp))))
       ((member (car sexp) *synonym-talk*) (eval (cons 'talk (cdr sexp))))
       ((member (car sexp) *synonym-open*) (eval (cons 'openthing (cdr sexp))))
+      ; gave look an arg so it is now a synonym for examine
+      ((equal (car sexp) 'look) (eval (cons 'look (cdr sexp))))
       ; I do this to prevent crash if user passes args to these funcs
-      ((equal (car sexp) 'inventory) (eval '(inventory)))
+      ((equal (car sexp) 'items) (eval '(items)))
       ((equal (car sexp) 'stats) (eval '(stats)))
-      ((equal (car sexp) 'look) (eval '(look)))
+      ;((equal (car sexp) 'look) (eval '(look)))
       ((equal (car sexp) 'use) (eval (cons 'use (cdr sexp))))
       ((equal (car sexp) 'examine) (eval (cons 'examine (cdr sexp))))
       ;; should get away from this for safety reasons-- to easy to crash
