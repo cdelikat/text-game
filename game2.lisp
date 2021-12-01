@@ -7,7 +7,6 @@
 (defparameter *nearby-person* nil)
 (defparameter *stats-moves* 0)
 (defparameter *current-event* nil)
-(defparameter *current-grid* *map1*)
 
 (defparameter *map1*
 #2A(
@@ -30,19 +29,20 @@
 (office1      inner-entryway    wall)
 ))
 
+(defparameter *current-grid* *map1*)
 (defparameter *location* '(0 0))
 
 ; (PLACE-NAME (VIEW OF PLACE FROM OUTSIDE) (DESCR OF PLACE WHEN INSIDE))
 (defparameter *places*
 '(
   (your-car (your automobile.) (You are in your car in the parking lot of the "Laboratories" for "Sciences" "Department." ))
-  (parking-lot1 (parking lot.) (You are in the parking lot just south of the "Laboratories" for "Sciences" "Department."))
-  (parking-lot2 (parking lot.) (You are in the parking lot just south of the "Laboratories" for "Sciences" "Department."))
-  (parking-lot3 (parking lot.) (You are in the parking lot just south of the "Laboratories" for "Sciences" "Department."))
-  (parking-lot4 (parking lot.) (You are in the parking lot just south of the "Laboratories" for "Sciences" "Department."))
-  (parking-lot5 (parking lot.) (You are in the parking lot just south of the "Laboratories" for "Sciences" "Department."))
-  (parking-lot6 (parking lot.) (You are in the parking lot just south of the "Laboratories" for "Sciences" "Department."))
-  (parking-lot7 (parking lot.) (You are in the parking lot just south of the "Laboratories" for "Sciences" "Department."))
+  (parking-lot1 (parking lot.) (You are in the parking lot just north of the "Laboratories" for "Sciences" "Department."))
+  (parking-lot2 (parking lot.) (You are in the parking lot just north of the "Laboratories" for "Sciences" "Department."))
+  (parking-lot3 (parking lot.) (You are in the parking lot just north of the "Laboratories" for "Sciences" "Department."))
+  (parking-lot4 (parking lot.) (You are in the parking lot just north of the "Laboratories" for "Sciences" "Department."))
+  (parking-lot5 (parking lot.) (You are in the parking lot just north of the "Laboratories" for "Sciences" "Department."))
+  (parking-lot6 (parking lot.) (You are in the parking lot just north of the "Laboratories" for "Sciences" "Department."))
+  (parking-lot7 (parking lot.) (You are in the parking lot just north of the "Laboratories" for "Sciences" "Department."))
   (grass1 (some grass in front of the building.) (You are on the grass.))
   (grass2 (some grass in front of the building.) (You are on the grass.))
   (grass3 (some grass in front of the building.) (You are on the grass.))
@@ -58,6 +58,8 @@
   (front-door (the front door of the building.) (You are in front of the main door.))
   (forest-path1 (a path into the forest.) (You are on a path into the forest.))
   (path1 (a paved winding path.) (You are on the path to the door to the "LSD" building. You see a bench.))
+  (path2 (a paved winding path.) (You are on the path to the door to the "LSD" building.))
+  (path3 (a paved path.) (You are on the path to the door to the "LSD" building.))
   (side-patio ( patio on the side.) (You are on the side patio of the "LSD" building. There is a picnic table.))
   (side-path2 ( path around the side.) (You are on a sidewalk along the side of the "LSD" building.))
   (side-path1 ( path around the side.) (You are on a sidewalk along the side of the "LSD" building.))
@@ -132,12 +134,22 @@
 (defun see-special (place)
   (cadr (assoc place *doors*)))
 
+(defun stats ()
+  `(you have made ,*stats-moves* moves.))
+
 (defun look ()
   (append 
     (describe-location *location* *places*)
     (see-around2 (car *location*) (cadr *location*))
     (see-special (grid-loc *location*))))
 
+(defun openthing (&optional thing &rest thing-more)
+  (let ((d (find thing (cdr (assoc *location* *edges*)) :key #'caddr)))
+    (cond
+      ((eq thing nil) '(open what?))
+      ((eq d nil) `(there is no ,thing nearby.))
+      (t `(you opened the ,(concatenate 'string (string thing) ".")))
+)))
 ;;
 (defun tweak-text (lst caps lit)
   (when lst
@@ -190,15 +202,28 @@
     (let ((s (third (assoc (grid-loc2 x y) *doors*))))
       (if s
         (list (list s 0 0 'door))))))
+;; above is hard-coded to put door and starting point at 0 0, need to connect the new map here 
+;; and decide if all doors put you into (0 0) of the new map
 
+;; Make Location contain the MAP var
+;;
 ;; need to modify this to check adj-cells, then *doors* to see if near an open door
 (defun walk (dir)
   (let
+    ;; hey dude why doesnt valid-dirs just take a pair of numbers like grid-loc?
     ((next (find dir (valid-dirs (car *location*) (cadr *location*)) :key #'car)))
+    ;; if (valid-dirs 5 2), and dir SOUTH, next will be (SOUTH 0 0 DOOR)
+    ;;
+    ;; if (last next) 'DOOR, then also change map, but to this ...
+    ;; (car (last (assoc (grid-loc *location*) *doors*))) == *map2*
     (if next
       (progn
         (setf *location* (cdr next))
         (look)))))
+;; need to add an else here for when they cant go in the direction they typed
+;; also, what to do when its a door --> change maps!
+
+(defun use (a))
 
 (defun event-check (enc)
   (setf *current-event* nil)
