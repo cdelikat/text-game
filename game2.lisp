@@ -63,11 +63,20 @@
   (side-patio ( patio on the side.) (You are on the side patio of the "LSD" building. There is a picnic table.))
   (side-path2 ( path around the side.) (You are on a sidewalk along the side of the "LSD" building.))
   (side-path1 ( path around the side.) (You are on a sidewalk along the side of the "LSD" building.))
+  (entrance (you see the entrance to the lsd building.) (You are in the entrance area of the "LSD" building.))
+  (wall (you see a wall.) (You cant go this way.))
+  (lobby1 (you see the lobby. ) (You are in the lobby.))
+  (lobby2 (you see more lobby. ) (You are still in the lobby.))
 ))
 
 (defparameter *doors* 
-  '(
-    (front-door (You see a door with an id card reader.) south *map2*)
+  ;; XXX should remove direction from this list, should come from map
+  ;; (PLACE-NAME (PLACE-DESC) DIR-TO-ENTER MAP-TO-CHANGE-TO (LOCATION-ON-NEW-MAP))
+  ;;
+  ;; Need to add LOCKED and what item unlocks?
+  `(
+    (front-door (You see a door with an id card reader.) south ,*map2* (0 0))
+    (entrance (You see the entrance to the building. This will take you back outside.) west ,*map1* (5 2))
     (side-patio (You see a door that may be unlocked.))
 ))
 
@@ -110,6 +119,9 @@
 (defun prune (low high lst)
   (remove-if #'(lambda (pt) (or (member low pt) (member high pt))) lst))
 
+(defun prune-walls (lst) 
+  (remove-if #'(lambda (pt) (eq (grid-loc (cdr pt)) 'wall)) lst))
+
 ;; flattens list
 ;; (pt ((TO THE EAST YOU SEE (PARKING LOT.)) (TO THE SOUTH YOU SEE (PARKING LOT.))))
 ;; returns
@@ -134,17 +146,42 @@
 (defun see-special (place)
   (cadr (assoc place *doors*)))
 
+;; Items
+;; (objects-at *location* *objects* *object-locations*)
+;; returns
+;; (BADGE LUNCH RAINCOAT PAPER)
+(defun objects-at (loc objs obj-locs)
+  (labels ((at-loc-p (obj)
+    (eq (cadr (assoc obj obj-locs)) loc)))
+    (remove-if-not #'at-loc-p objs)))
+
+(defun describe-objects (loc objs obj-loc)
+  (labels ((describe-obj (obj)
+           (let ((ol (caddr (assoc obj obj-loc))))
+            `(you see a ,obj on ,ol))))
+    (apply #'append (mapcar #'describe-obj (objects-at loc objs obj-loc)))))
+;; Items
+
 (defun stats ()
   `(you have made ,*stats-moves* moves.))
+
+;; special
+(defun location ()
+  (append
+  `(grid location ,*location* )
+  `(grid ,*current-grid* )))
 
 (defun look ()
   (append 
     (describe-location *location* *places*)
     (see-around2 (car *location*) (cadr *location*))
-    (see-special (grid-loc *location*))))
+    (see-special (grid-loc *location*))
+    (describe-objects (grid-loc *location*) *objects* *object-locations*)))
 
+;; XXX do we really need this function?
 (defun openthing (&optional thing &rest thing-more)
-  (let ((d (find thing (cdr (assoc *location* *edges*)) :key #'caddr)))
+  (let ((d (find thing (valid-dirs *location*) :key #'cadddr)))
+    ;;((next (find dir (valid-dirs *location* ) :key #'car)))
     (cond
       ((eq thing nil) '(open what?))
       ((eq d nil) `(there is no ,thing nearby.))
@@ -192,18 +229,57 @@
 ;(defun describe-paths (loc grid)
 ;; create list of adjacent cells
 
+(defun go-thru-door ()
+  (progn
+    (let ((orig-location (grid-loc *location*)))
+  ;; check if door is open or locked
+  ;; XXX idea: maybe just having the badge will open the door
+  ;; makes it a little simpler to process, since user doesnt
+  ;; have to _do_ anything to open it, it just says something like
+  ;; "you use your badge to open the door"
+  ;; if locked has player done the necessary thing
+  ;; or carrying the necessary item to unlock
+  ;; if so, set current-grid to the new grid for door
+  ;; set location
+    (format t "~% ~A ~%" "go-thru-door-1" )
+    (setq *current-grid* (car (cdddr (assoc orig-location *doors*))))
+    (format t "~% ~A ~%" "go-thru-door-2" )
+    (setq *location* (car (last (assoc orig-location *doors*))))
+    (format t "~% ~A ~%" "go-thru-door-3" )
+  ) ;; let
+  )
+)
+
 ;; this could be good, hide the complexity from walk function,
-;; just return a list of valid directions
-(defun valid-dirs (x y)
+;; just return a list of valid directions and the points they'll
+;; send you to if you go there.
+;; (valid-dirs '(0 0))
+;;((EAST 0 1) (SOUTH 1 0))
+;; (valid-dirs '(3 3))
+;;((NORTH 2 3) (WEST 3 2) (EAST 3 4) (SOUTH 4 3))
+;; DOOR is special
+;; XXX Maybe Im over complicating the door thing.
+;; Q: what if insted of 'door, we just tack on the *map2* you're moving to?
+;; A: I think we need 'door b/c in some cases you have to get thru the door
+;;    and its not automatic
+;; (valid-dirs '(5 2))
+;;((NORTH 4 2) (WEST 5 1) (EAST 5 3) (SOUTH 0 0 DOOR))
+;;
+(defun valid-dirs2 (x y))
+(defun valid-dirs (point-pair)
   (append
     ;; get simple grid-based directions
-    (prune *low* *high* (adj-cells x y))
+    (prune-walls (prune *low* *high* (adj-cells (car point-pair) (cadr point-pair))))
+    ;; NEED TO PRUNE WALLS
+    ;; (prune-walls (prune ... <above call> ))
     ;; get special directions, eg doors
-    (let ((s (third (assoc (grid-loc2 x y) *doors*))))
+    ;; THIS IS PROBABLY NOT NECESSARY, need to fix. DIRECTION should come from map
+    (let ((s (third (assoc (grid-loc point-pair) *doors*))))
       (if s
         (list (list s 0 0 'door))))))
 ;; above is hard-coded to put door and starting point at 0 0, need to connect the new map here 
 ;; and decide if all doors put you into (0 0) of the new map
+;; UPDATE: the 0 0 above doesnt matter, we never use it
 
 ;; Make Location contain the MAP var
 ;;
@@ -211,15 +287,25 @@
 (defun walk (dir)
   (let
     ;; hey dude why doesnt valid-dirs just take a pair of numbers like grid-loc?
-    ((next (find dir (valid-dirs (car *location*) (cadr *location*)) :key #'car)))
+    ((next (find dir (valid-dirs *location* ) :key #'car)))
     ;; if (valid-dirs 5 2), and dir SOUTH, next will be (SOUTH 0 0 DOOR)
     ;;
     ;; if (last next) 'DOOR, then also change map, but to this ...
     ;; (car (last (assoc (grid-loc *location*) *doors*))) == *map2*
     (if next
       (progn
-        (setf *location* (cdr next))
-        (look)))))
+        ;; if the next move contains a door, need to change the map
+        ;; XXX how do we use things to get thru doors?
+        (if (eq 'door (cadddr next))
+          (go-thru-door)
+          ;(setq *current-grid* (car (last (assoc (grid-loc *location*) *doors*)))))
+          ;(setf *current-grid* 'fafa))
+        ;; only do this if its not a door
+          (setf *location* (cdr next)))
+        (look))
+       (progn
+          '(not a way to go person.))
+      )))
 ;; need to add an else here for when they cant go in the direction they typed
 ;; also, what to do when its a door --> change maps!
 
@@ -243,7 +329,7 @@
 (defparameter *synonym-walk* '(walk go move run))
 (defparameter *synonym-talk* '(talk say speak shout whisper respond ask))
 (defparameter *synonym-open* '(open unlock openthing))
-(defparameter *allowed-commands* (append '(look items stats use examine) *synonym-pickup* *synonym-walk* *synonym-talk* *synonym-open*))
+(defparameter *allowed-commands* (append '(look items stats use examine location) *synonym-pickup* *synonym-walk* *synonym-talk* *synonym-open*))
 
 (defun game-read (rcmd)
   (ignore-errors
@@ -262,6 +348,7 @@
 (defun game-eval (sexp)
   (progn
     ;(format t "~% ~A ~A ~%" "game-eval" sexp)
+    ;(format t "~% ~A ~A ~%" "game-eval" sexp)
   (if (member (car sexp) *allowed-commands*)
     (cond
       ;; TODO why cant i just send cadr of sexp to eval, to drop extra args??
@@ -275,6 +362,7 @@
       ; I do this to prevent crash if user passes args to these funcs
       ((equal (car sexp) 'items) (eval '(items)))
       ((equal (car sexp) 'stats) (eval '(stats)))
+      ((equal (car sexp) 'location) (eval '(location)))
       ;((equal (car sexp) 'look) (eval '(look)))
       ((equal (car sexp) 'use) (eval (cons 'use (cdr sexp))))
       ((equal (car sexp) 'examine) (eval (cons 'examine (cdr sexp))))
