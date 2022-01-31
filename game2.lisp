@@ -55,6 +55,9 @@
   (grass10 (some grass in front of the building.) (You are on the grass.))
   (grass11 (some grass in front of the building.) (You are on the grass.))
   (grass12 (some grass in front of the building.) (You are on the grass.))
+  (forest1 (a forest of green trees.) (You stand among the trees.))
+  (forest2 (a forest of green trees.) (You stand among the trees.))
+  (forest3 (a forest of green trees.) (You stand among the trees.))
   (front-door (the front door of the building.) (You are in front of the main door.))
   (forest-path1 (a path into the forest.) (You are on a path into the forest.))
   (path1 (a paved winding path.) (You are on the path to the door to the "LSD" building. You see a bench.))
@@ -75,9 +78,17 @@
   ;;
   ;; Need to add LOCKED and what item unlocks?
   `(
-    (front-door (You see a door with an id card reader.) south ,*map2* (0 0))
-    (entrance (You see the entrance to the building. This will take you back outside.) west ,*map1* (5 2))
-    (side-patio (You see a door that may be unlocked.))
+    (front-door 
+      (locked badge)
+      (You see a door with an id card reader.) 
+      south ,*map2* (0 0))
+    (entrance 
+      (unlocked)
+      (You see the entrance to the building to the west. This will take you back outside.) 
+      west ,*map1* (5 2))
+    (side-patio 
+      (unlocked)
+      (You see a door that may be unlocked.))
 ))
 
 ;; input: '(0 0)
@@ -144,7 +155,7 @@
   (flatten (mapcar #'see-direction (prune *low* *high* (adj-cells x y)))))
 
 (defun see-special (place)
-  (cadr (assoc place *doors*)))
+  (caddr (assoc place *doors*)))
 
 ;; Items
 ;; (objects-at *location* *objects* *object-locations*)
@@ -229,6 +240,18 @@
 ;(defun describe-paths (loc grid)
 ;; create list of adjacent cells
 
+(defun have-item (item)
+  (if (member item (objects-at 'body *objects* *object-locations*)) t))
+
+(defun can-open-door ()
+  ;; what does door need to open
+  ;; (cadr (second (assoc (grid-loc '(5 2)) *doors*)))
+  ;; do you have it?
+  (if (eq 'unlocked (car (second (assoc (grid-loc *location*) *doors*)))) 
+    t
+  (let ((key (cadr (second (assoc (grid-loc *location*) *doors*)))))
+    (if (have-item key) t))))
+
 (defun go-thru-door ()
   (progn
     (let ((orig-location (grid-loc *location*)))
@@ -242,7 +265,7 @@
   ;; if so, set current-grid to the new grid for door
   ;; set location
     (format t "~% ~A ~%" "go-thru-door-1" )
-    (setq *current-grid* (car (cdddr (assoc orig-location *doors*))))
+    (setq *current-grid* (car (cddddr (assoc orig-location *doors*))))
     (format t "~% ~A ~%" "go-thru-door-2" )
     (setq *location* (car (last (assoc orig-location *doors*))))
     (format t "~% ~A ~%" "go-thru-door-3" )
@@ -274,7 +297,7 @@
     ;; (prune-walls (prune ... <above call> ))
     ;; get special directions, eg doors
     ;; THIS IS PROBABLY NOT NECESSARY, need to fix. DIRECTION should come from map
-    (let ((s (third (assoc (grid-loc point-pair) *doors*))))
+    (let ((s (fourth (assoc (grid-loc point-pair) *doors*))))
       (if s
         (list (list s 0 0 'door))))))
 ;; above is hard-coded to put door and starting point at 0 0, need to connect the new map here 
@@ -285,6 +308,18 @@
 ;;
 ;; need to modify this to check adj-cells, then *doors* to see if near an open door
 (defun walk (dir)
+  (let
+    ((next (find dir (valid-dirs *location* ) :key #'car)))
+    (cond 
+      ((eq next nil) '(not a way to go dude))
+      ((eq 'door (cadddr next))
+          (if (can-open-door)
+            (go-thru-door)
+            '(The door is locked forget your badge?)))
+          ;; only do this if its not a door
+      (t (progn (setf *location* (cdr next)) (look) )))))
+
+(defun walk2 (dir)
   (let
     ;; hey dude why doesnt valid-dirs just take a pair of numbers like grid-loc?
     ((next (find dir (valid-dirs *location* ) :key #'car)))
@@ -297,10 +332,11 @@
         ;; if the next move contains a door, need to change the map
         ;; XXX how do we use things to get thru doors?
         (if (eq 'door (cadddr next))
-          (go-thru-door)
-          ;(setq *current-grid* (car (last (assoc (grid-loc *location*) *doors*)))))
-          ;(setf *current-grid* 'fafa))
-        ;; only do this if its not a door
+          (if (can-open-door)
+            (go-thru-door)
+            (format t "~% ~A ~%" "The door is locked, maybe you need your badge?" )
+          )
+          ;; only do this if its not a door
           (setf *location* (cdr next)))
         (look))
        (progn
@@ -310,6 +346,21 @@
 ;; also, what to do when its a door --> change maps!
 
 (defun use (a))
+
+;; need to sanitize object
+;; putting semicolon causes crash
+(defun pickup (&optional object &rest obj-more)
+  (cond
+    ;; Is the object I want to pickup in the location that I am?
+    ((member object (objects-at (grid-loc *location*) *objects* *object-locations*))
+       ;; if so, change the object-location to "body" and return 'carrying' text
+       (push (list object 'body) *object-locations*)
+      `(you are now carrying the ,object))
+     (t '(you cannot get that.))))
+
+;; nf
+(defun items ()
+  (cons 'items- (objects-at 'body *objects* *object-locations*)))
 
 (defun event-check (enc)
   (setf *current-event* nil)
