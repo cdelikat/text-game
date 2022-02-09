@@ -1,15 +1,24 @@
 
 (defparameter *high* 6)
 (defparameter *low* -1)
-(load "laboratory.lisp")
 (defparameter *player* 'chris)
-(defparameter *used-badge* 0)
-(defparameter *nearby-person* nil)
+(load "g2-lab.lisp")
 (defparameter *stats-moves* 0)
 (defparameter *current-event* nil)
 
-(defparameter *map1*
-#2A(
+;; flattens list
+;; (pt ((TO THE EAST YOU SEE (PARKING LOT.)) (TO THE SOUTH YOU SEE (PARKING LOT.))))
+;; returns
+;; (TO THE EAST YOU SEE PARKING LOT. TO THE SOUTH YOU SEE PARKING LOT.) 
+(defun flatten (lst)
+  (cond
+    ((eq lst nil) '())
+    ((atom (car lst)) (cons (car lst) (flatten (cdr lst))))
+    (t (append (flatten (car lst)) (flatten (cdr lst)))))
+)
+
+(defparameter *map1-list*
+'(
 ;; NORTH
 ;; 0          1             2             3             4             5
 (your-car     parking-lot1 parking-lot2 forest-path1  forest-path2 forest-bridge)
@@ -21,7 +30,25 @@
 ;; SOUTH
 ))
 
-(defparameter *map2*
+;; outside-lab-front
+(defparameter *map1* (make-array '(6 6)
+:initial-contents *map1-list*
+))
+
+(defparameter *map2-list*
+'(
+(entrance     lobby1        waiting-area1   waiting-area4)
+(wall         lobby2        waiting-area2   waiting-area5)
+(inner-hall   inner-door    waiting-area3   waiting-area6)
+(office1      inner-entryway    wall        waiting-area7)
+))
+
+(defparameter *map2* (make-array '(4 4)
+ :initial-contents *map2-list*
+))
+
+;; lab-lobby
+(defparameter *map32*
 #2A(
 (entrance     lobby1        waiting-area1)
 (wall         lobby2        waiting-area2)
@@ -29,9 +56,13 @@
 (office1      inner-entryway    wall)
 ))
 
+(load "g2-people.lisp")
+(defparameter *nearby-person* 'claude)
+(defparameter *current-place* 'outside-lab-front)
 (defparameter *current-grid* *map1*)
 (defparameter *location* '(0 0))
 
+;; XXX change this to only hold places for your current-place
 ; (PLACE-NAME (VIEW OF PLACE FROM OUTSIDE) (DESCR OF PLACE WHEN INSIDE))
 (defparameter *places*
 '(
@@ -70,26 +101,46 @@
   (wall (you see a wall.) (You cant go this way.))
   (lobby1 (you see the lobby. ) (You are in the lobby.))
   (lobby2 (you see more lobby. ) (You are still in the lobby.))
+  (waiting-area1 (you see chairs and small tables. ) (You are still in the waiting area.))
+  (waiting-area2 (you see chairs and small tables. ) (You are still in the waiting area.))
+  (waiting-area3 (you see chairs and small tables. ) (You are still in the waiting area.))
 ))
 
 (defparameter *doors* 
   ;; XXX should remove direction from this list, should come from map
-  ;; (PLACE-NAME (PLACE-DESC) DIR-TO-ENTER MAP-TO-CHANGE-TO (LOCATION-ON-NEW-MAP))
+  ;; (PLACE-NAME (PLACE-DESC) DIR-TO-ENTER MAP-TO-CHANGE-TO high-map-num(LOCATION-ON-NEW-MAP))
   ;;
   ;; Need to add LOCKED and what item unlocks?
   `(
     (front-door 
       (locked badge)
       (You see a door with an id card reader.) 
-      south ,*map2* (0 0))
+      south ,*map2* 4 (0 0))
     (entrance 
       (unlocked)
       (You see the entrance to the building to the west. This will take you back outside.) 
-      west ,*map1* (5 2))
+      west ,*map1* 6 (5 2))
     (side-patio 
       (unlocked)
       (You see a door that may be unlocked.))
 ))
+
+(defun thing-check (enc thing1 thing2 thing3)
+  (set thing1 nil)
+  (let ((tmp (caadr (assoc enc thing2))))
+    (if (and (not (eq tmp nil))
+             (member (grid-loc *location*) (cadr (assoc 'allowed-locations (cdr (assoc tmp thing3))))))
+      (set thing1 (caadr (assoc enc thing2))))
+    (cadr (assoc 'sighting-msg (cdr (assoc (symbol-value thing1) thing3))))
+))
+
+(defun random-encounter (enc)
+  (thing-check enc '*nearby-person* *encounters* *people*)
+)
+
+(defun event-check (enc)
+  (thing-check enc '*current-event* *events-at-moves* *events*)
+)
 
 ;; input: '(0 0)
 ;; output: YOUR-CAR
@@ -133,16 +184,6 @@
 (defun prune-walls (lst) 
   (remove-if #'(lambda (pt) (eq (grid-loc (cdr pt)) 'wall)) lst))
 
-;; flattens list
-;; (pt ((TO THE EAST YOU SEE (PARKING LOT.)) (TO THE SOUTH YOU SEE (PARKING LOT.))))
-;; returns
-;; (TO THE EAST YOU SEE PARKING LOT. TO THE SOUTH YOU SEE PARKING LOT.) 
-(defun flatten (lst)
-  (cond
-    ((eq lst nil) '())
-    ((atom (car lst)) (cons (car lst) (flatten (cdr lst))))
-    (t (append (flatten (car lst)) (flatten (cdr lst)))))
-)
   
 (defun grid-see (point-pair)
   (cadr (assoc (grid-loc point-pair) *places*)))
@@ -187,7 +228,8 @@
     (describe-location *location* *places*)
     (see-around2 (car *location*) (cadr *location*))
     (see-special (grid-loc *location*))
-    (describe-objects (grid-loc *location*) *objects* *object-locations*)))
+    (describe-objects (grid-loc *location*) *objects* *object-locations*)
+    (random-encounter (random *total-encounters*))))
 
 ;; XXX do we really need this function?
 (defun openthing (&optional thing &rest thing-more)
@@ -243,18 +285,21 @@
 (defun have-item (item)
   (if (member item (objects-at 'body *objects* *object-locations*)) t))
 
+(defun whats-the-key ()
+  (cadr (second (assoc (grid-loc *location*) *doors*))))
+
 (defun can-open-door ()
   ;; what does door need to open
   ;; (cadr (second (assoc (grid-loc '(5 2)) *doors*)))
   ;; do you have it?
-  (if (eq 'unlocked (car (second (assoc (grid-loc *location*) *doors*)))) 
-    t
-  (let ((key (cadr (second (assoc (grid-loc *location*) *doors*)))))
-    (if (have-item key) t))))
+  (cond
+    ((eq 'unlocked (car (second (assoc (grid-loc *location*) *doors*)))) t)
+    ((have-item (whats-the-key)) t)
+  ))
 
 (defun go-thru-door ()
   (progn
-    (let ((orig-location (grid-loc *location*)))
+    (let ((orig-location (grid-loc *location*)) (key (whats-the-key)))
   ;; check if door is open or locked
   ;; XXX idea: maybe just having the badge will open the door
   ;; makes it a little simpler to process, since user doesnt
@@ -264,11 +309,13 @@
   ;; or carrying the necessary item to unlock
   ;; if so, set current-grid to the new grid for door
   ;; set location
-    (format t "~% ~A ~%" "go-thru-door-1" )
+    ;;(format t "~% ~A ~%" "go-thru-door-1" )
     (setq *current-grid* (car (cddddr (assoc orig-location *doors*))))
-    (format t "~% ~A ~%" "go-thru-door-2" )
+    (setq *high* (cadr (cddddr (assoc orig-location *doors*))))
+    ;(format t "~% ~A ~%" "go-thru-door-2" )
     (setq *location* (car (last (assoc orig-location *doors*))))
-    (format t "~% ~A ~%" "go-thru-door-3" )
+    ;(format t "~% ~A ~%" "go-thru-door-3" )
+    `(you use your ,key to go thru the door with ease.)
   ) ;; let
   )
 )
@@ -314,11 +361,12 @@
       ((eq next nil) '(not a way to go dude))
       ((eq 'door (cadddr next))
           (if (can-open-door)
-            (go-thru-door)
-            '(The door is locked forget your badge?)))
+            (go-thru-door) 
+            `(The door is locked. Looks like you need a ,(whats-the-key) to open it.)))
           ;; only do this if its not a door
       (t (progn (setf *location* (cdr next)) (look) )))))
 
+;;broken, needs to use cond
 (defun walk2 (dir)
   (let
     ;; hey dude why doesnt valid-dirs just take a pair of numbers like grid-loc?
@@ -362,25 +410,65 @@
 (defun items ()
   (cons 'items- (objects-at 'body *objects* *object-locations*)))
 
-(defun event-check (enc)
-  (setf *current-event* nil)
-  (let ((event (caadr (assoc enc *events-at-moves*))))
-    (if (and (not (eq event nil))
-             (member *location* (cadr (assoc 'allowed-locations (cdr (assoc event *events*))))))
-      (setf *current-event* (caadr (assoc enc *events-at-moves*))))
-    (let ((action (cadr (assoc 'action (cdr (assoc event *events*))))))
-      ;(format t "~% ~A ~%" action)
-      ;; BUG: if there's an action, we never see the sighting-msg
-      (if (not (eq action nil))
-        (eval (list action))))
-    (cadr (assoc 'sighting-msg (cdr (assoc *current-event* *events*))))
-))
+(defun examine (&optional item)
+  (cond
+    ((eq item nil)  '(Examine what?))
+    ((not (member item (objects-at 'body *objects* *object-locations*))) '(you dont have that!))
+    ((member item (objects-at 'body *objects* *object-locations*)) (cadr (assoc item *object-descriptions*)))))
+
+;; talking functions
+(defun respond (text person)
+    (let ((r (cadr (assoc text (cdr (assoc person *people*))))))
+      ;;(format t "~% ~A ~A ~%" "respond text:" r)
+      (if (eq text 'bye) (setq *nearby-person* nil))
+      (if (not r)
+      (cadr (assoc 'default (cdr (assoc person *people*))))
+      r))
+)
+
+(defun talk-read (words)
+  (car (read-from-string
+    (concatenate 'string "(" words ")"))))
+
+(defun talk (&optional blah)
+  (talk-repl)
+)
+
+(defun talk-repl ()
+  ;;(format t "~% ~A" "?")
+  ;;(princ ">")
+  (format *query-io* "~a " "?")
+  (force-output *query-io*)
+  (let ((say (talk-read (read-line *query-io*))))
+    ;;(format t "~% ~A ~A ~%" "talk-repl say:" say)
+    ;;(game-print (respond say *nearby-person*))
+    (game-print (cons '? (respond say *nearby-person*)))
+    (unless (eq say 'bye)
+      (talk-repl))))
+;; end talking functions
+
+    
+
+;(defun event-check (enc)
+;  (setf *current-event* nil)
+;  (let ((event (caadr (assoc enc *events-at-moves*))))
+;    (if (and (not (eq event nil))
+;             (member (grid-loc *location*) (cadr (assoc 'allowed-locations (cdr (assoc event *events*))))))
+;      (setf *current-event* (caadr (assoc enc *events-at-moves*))))
+;    (let ((action (cadr (assoc 'action (cdr (assoc event *events*))))))
+;      ;(format t "~% ~A ~%" action)
+;      ;; BUG: if there's an action, we never see the sighting-msg
+;      (if (not (eq action nil))
+;        (eval (list action))))
+;    (cadr (assoc 'sighting-msg (cdr (assoc *current-event* *events*))))
+;))
 
 (defparameter *synonym-pickup* '(pickup grab get take))
-(defparameter *synonym-walk* '(walk go move run))
+(defparameter *synonym-walk* '(walk go move run cd))
+(defparameter *synonym-look* '(look ls))
 (defparameter *synonym-talk* '(talk say speak shout whisper respond ask))
 (defparameter *synonym-open* '(open unlock openthing))
-(defparameter *allowed-commands* (append '(look items stats use examine location) *synonym-pickup* *synonym-walk* *synonym-talk* *synonym-open*))
+(defparameter *allowed-commands* (append '(look items stats use examine location) *synonym-pickup* *synonym-walk* *synonym-look* *synonym-talk* *synonym-open*))
 
 (defun game-read (rcmd)
   (ignore-errors
@@ -409,7 +497,7 @@
       ((member (car sexp) *synonym-talk*) (eval (cons 'talk (cdr sexp))))
       ((member (car sexp) *synonym-open*) (eval (cons 'openthing (cdr sexp))))
       ; gave look an arg so it is now a synonym for examine
-      ((equal (car sexp) 'look) (eval (cons 'look (cdr sexp))))
+      ((member (car sexp) *synonym-look*) (eval (cons 'look (cdr sexp))))
       ; I do this to prevent crash if user passes args to these funcs
       ((equal (car sexp) 'items) (eval '(items)))
       ((equal (car sexp) 'stats) (eval '(stats)))
@@ -441,17 +529,20 @@
 
 ;; TODO Sanitize input, semicolons crash!!!
 (defun game-repl ()
-  (let ((cmd (game-read (read-line))))
+  (format *query-io* "~a " "-->")
+  (force-output *query-io*)
+  (let ((cmd (game-read (read-line *query-io*))))
     (print cmd)
     (loggit "game-repl: cmd" cmd)
-    (if (and (> *used-badge* 0) (= (+ 2 *used-badge*) *stats-moves*))
-      (progn
-        (setq *edges* (cdr *edges*))
-        (setq *used-badge* 0)))
+    ;;(if (and (> *used-badge* 0) (= (+ 2 *used-badge*) *stats-moves*))
+     ;; (progn
+      ;;  (setq *edges* (cdr *edges*))
+       ;; (setq *used-badge* 0)))
     (if (not (eq (car cmd) 'stats))
       (progn
         (setq *stats-moves* (+ *stats-moves* 1))    ;; incr total moves
-        (game-print (event-check *stats-moves*))))  ;; is there an event at this move number?
+        (game-print (event-check *stats-moves*))
+      ))  ;; is there an event at this move number?
     (unless (eq (car cmd) 'quit)
       (game-print (game-eval cmd))
       (game-repl))))
