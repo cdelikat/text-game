@@ -2,109 +2,17 @@
 (defparameter *high* 6)
 (defparameter *low* -1)
 (defparameter *player* 'chris)
+(load "g2-util.lisp")
 (load "g2-lab.lisp")
 (defparameter *stats-moves* 0)
 (defparameter *current-event* nil)
 
-;; flattens list
-;; (pt ((TO THE EAST YOU SEE (PARKING LOT.)) (TO THE SOUTH YOU SEE (PARKING LOT.))))
-;; returns
-;; (TO THE EAST YOU SEE PARKING LOT. TO THE SOUTH YOU SEE PARKING LOT.) 
-(defun flatten (lst)
-  (cond
-    ((eq lst nil) '())
-    ((atom (car lst)) (cons (car lst) (flatten (cdr lst))))
-    (t (append (flatten (car lst)) (flatten (cdr lst)))))
-)
-
-(defparameter *map1-list*
-'(
-;; NORTH
-;; 0          1             2             3             4             5
-(your-car     parking-lot1 parking-lot2 forest-path1  forest-path2 forest-bridge)
-(parking-lot3 parking-lot4 parking-lot5 forest1       forest2       forest3)
-(parking-lot6 parking-lot7 path1        grass7        grass8        parking-lot8)   ;; EAST
-(grass1       grass2       path2        grass9        grass10       dumpster)
-(grass3       grass4       path3        grass11       grass12       side-patio)
-(grass5       grass6       front-door   side-path1    side-path2    picnic-table)
-;; SOUTH
-))
-
-;; outside-lab-front
-(defparameter *map1* (make-array '(6 6)
-:initial-contents *map1-list*
-))
-
-(defparameter *map2-list*
-'(
-(entrance     lobby1        waiting-area1   waiting-area4)
-(wall         lobby2        waiting-area2   waiting-area5)
-(inner-hall   inner-door    waiting-area3   waiting-area6)
-(office1      inner-entryway    wall        waiting-area7)
-))
-
-(defparameter *map2* (make-array '(4 4)
- :initial-contents *map2-list*
-))
-
-;; lab-lobby
-(defparameter *map32*
-#2A(
-(entrance     lobby1        waiting-area1)
-(wall         lobby2        waiting-area2)
-(inner-hall   inner-door    waiting-area3)
-(office1      inner-entryway    wall)
-))
-
+(load "g2-places.lisp")
 (load "g2-people.lisp")
 (defparameter *nearby-person* 'claude)
-(defparameter *current-place* 'outside-lab-front)
+(defparameter *current-place* *outside-lab-front*)
 (defparameter *current-grid* *map1*)
-(defparameter *location* '(0 0))
-
-;; XXX change this to only hold places for your current-place
-; (PLACE-NAME (VIEW OF PLACE FROM OUTSIDE) (DESCR OF PLACE WHEN INSIDE))
-(defparameter *places*
-'(
-  (your-car (your automobile.) (You are in your car in the parking lot of the "Laboratories" for "Sciences" "Department." ))
-  (parking-lot1 (parking lot.) (You are in the parking lot just north of the "Laboratories" for "Sciences" "Department."))
-  (parking-lot2 (parking lot.) (You are in the parking lot just north of the "Laboratories" for "Sciences" "Department."))
-  (parking-lot3 (parking lot.) (You are in the parking lot just north of the "Laboratories" for "Sciences" "Department."))
-  (parking-lot4 (parking lot.) (You are in the parking lot just north of the "Laboratories" for "Sciences" "Department."))
-  (parking-lot5 (parking lot.) (You are in the parking lot just north of the "Laboratories" for "Sciences" "Department."))
-  (parking-lot6 (parking lot.) (You are in the parking lot just north of the "Laboratories" for "Sciences" "Department."))
-  (parking-lot7 (parking lot.) (You are in the parking lot just north of the "Laboratories" for "Sciences" "Department."))
-  (grass1 (some grass in front of the building.) (You are on the grass.))
-  (grass2 (some grass in front of the building.) (You are on the grass.))
-  (grass3 (some grass in front of the building.) (You are on the grass.))
-  (grass4 (some grass in front of the building.) (You are on the grass.))
-  (grass5 (some grass in front of the building.) (You are on the grass.))
-  (grass6 (some grass in front of the building.) (You are on the grass.))
-  (grass7 (some grass in front of the building.) (You are on the grass.))
-  (grass8 (some grass in front of the building.) (You are on the grass.))
-  (grass9 (some grass in front of the building.) (You are on the grass.))
-  (grass10 (some grass in front of the building.) (You are on the grass.))
-  (grass11 (some grass in front of the building.) (You are on the grass.))
-  (grass12 (some grass in front of the building.) (You are on the grass.))
-  (forest1 (a forest of green trees.) (You stand among the trees.))
-  (forest2 (a forest of green trees.) (You stand among the trees.))
-  (forest3 (a forest of green trees.) (You stand among the trees.))
-  (front-door (the front door of the building.) (You are in front of the main door.))
-  (forest-path1 (a path into the forest.) (You are on a path into the forest.))
-  (path1 (a paved winding path.) (You are on the path to the door to the "LSD" building. You see a bench.))
-  (path2 (a paved winding path.) (You are on the path to the door to the "LSD" building.))
-  (path3 (a paved path.) (You are on the path to the door to the "LSD" building.))
-  (side-patio ( patio on the side.) (You are on the side patio of the "LSD" building. There is a picnic table.))
-  (side-path2 ( path around the side.) (You are on a sidewalk along the side of the "LSD" building.))
-  (side-path1 ( path around the side.) (You are on a sidewalk along the side of the "LSD" building.))
-  (entrance (you see the entrance to the lsd building.) (You are in the entrance area of the "LSD" building.))
-  (wall (you see a wall.) (You cant go this way.))
-  (lobby1 (you see the lobby. ) (You are in the lobby.))
-  (lobby2 (you see more lobby. ) (You are still in the lobby.))
-  (waiting-area1 (you see chairs and small tables. ) (You are still in the waiting area.))
-  (waiting-area2 (you see chairs and small tables. ) (You are still in the waiting area.))
-  (waiting-area3 (you see chairs and small tables. ) (You are still in the waiting area.))
-))
+(defparameter *location* '(5 5))
 
 (defparameter *doors* 
   ;; XXX should remove direction from this list, should come from map
@@ -114,12 +22,20 @@
   `(
     (front-door 
       (locked badge)
-      (You see a door with an id card reader.) 
-      south ,*map2* 4 (0 0))
+      (You see a door with an id card reader to the north.) 
+      north ,*map2* ,*lab-lobby* 4 (3 1))
     (entrance 
       (unlocked)
-      (You see the entrance to the building to the west. This will take you back outside.) 
-      west ,*map1* 6 (5 2))
+      (You see the entrance to the building to the south. This will take you back outside.) 
+      south ,*map1* ,*outside-lab-front* 6 (5 2))
+    (inner-entryway 
+      (unlocked)
+      (You see the way into the lab to the east. This is the place to go.) 
+      east ,*map3* ,*lab-floor1* 10 (9 0))
+    (en 
+      (unlocked)
+      (You see the door to the lobby to the west.) 
+      west ,*map2* ,*lab-lobby* 4 (2 3))
     (side-patio 
       (unlocked)
       (You see a door that may be unlocked.))
@@ -186,7 +102,7 @@
 
   
 (defun grid-see (point-pair)
-  (cadr (assoc (grid-loc point-pair) *places*)))
+  (cadr (assoc (grid-loc point-pair) *current-place*)))
 
 ;; dir-place = (EAST 0 1)
 (defun see-direction (dir-place)
@@ -225,7 +141,7 @@
 
 (defun look ()
   (append 
-    (describe-location *location* *places*)
+    (describe-location *location* *current-place*)
     (see-around2 (car *location*) (cadr *location*))
     (see-special (grid-loc *location*))
     (describe-objects (grid-loc *location*) *objects* *object-locations*)
@@ -311,7 +227,8 @@
   ;; set location
     ;;(format t "~% ~A ~%" "go-thru-door-1" )
     (setq *current-grid* (car (cddddr (assoc orig-location *doors*))))
-    (setq *high* (cadr (cddddr (assoc orig-location *doors*))))
+    (setq *current-place* (cadr (cddddr (assoc orig-location *doors*))))
+    (setq *high* (caddr (cddddr (assoc orig-location *doors*))))
     ;(format t "~% ~A ~%" "go-thru-door-2" )
     (setq *location* (car (last (assoc orig-location *doors*))))
     ;(format t "~% ~A ~%" "go-thru-door-3" )
