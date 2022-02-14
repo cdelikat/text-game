@@ -1,0 +1,24 @@
+
+Need drive command.
+
+1. add all encounter info 
+--fix so all-nodes includes all maps
+
+--connect places to map grids, so there are multiple lists
+--move that stuff into its own file
+
+2. make some items hidden 
+OR maybe just create another command like SEARCH that randomly shows items?
+Might need this when we have to SEARCH for barcodes
+
+3. enable a MAP feature so user can see an ascii map and where they are on it
+   but only usable if they have a certain item, like U4 gems.
+
+Obstacles:
+-dont know where barcodes are
+--need to SEARCH in some areas
+--some items are on loading dock in boxes, must open boxes?
+--last item on the roof
+
+-need to ask someone to put you on the lab door before you can enter
+-
